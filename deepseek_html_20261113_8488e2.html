@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0f172a" />
+<title>Casa Sênior 3D — v7</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1020;color:#fff;-webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none}
+  #app{position:fixed;inset:0}
+  #app canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+  #app canvas:active{cursor:grabbing}
+  #ui-overlay{position:fixed;inset:0;pointer-events:none;z-index:10;display:flex;flex-direction:column;justify-content:flex-end}
+  #ui-overlay>*{pointer-events:auto}
+  .top-bar{position:absolute;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:5}
+  .top-bar>*{pointer-events:auto}
+  .top-bar h1{font-size:20px;font-weight:700;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.8);letter-spacing:.2px}
+  .top-btns{display:flex;gap:8px}
+  .btn,.btn-close{font-family:inherit;cursor:pointer;border:none;transition:transform .12s ease,background .2s}
+  .btn:active,.btn-close:active,.automation-item:active{transform:scale(.97)}
+  .btn{background:#2563eb;color:#fff;border-radius:14px;padding:16px 20px;font-size:18px;font-weight:700;min-height:56px;width:100%;touch-action:manipulation}
+  .btn:active{background:#1d4ed8}
+  .btn-ghost{background:#334155}
+  .btn-close{background:rgba(15,23,42,.75);color:#fff;width:48px;height:48px;border-radius:24px;font-size:20px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.15)}
+  .btn-close:active{background:rgba(15,23,42,.95)}
+  .hint{position:absolute;top:calc(env(safe-area-inset-top) + 72px);left:16px;right:16px;background:rgba(15,23,42,.85);color:#fde68a;border:1px solid rgba(253,230,138,.35);padding:14px 18px;border-radius:14px;font-size:15px;text-align:center;line-height:1.45;pointer-events:none;animation:hintPulse 2.4s ease-in-out infinite;backdrop-filter:blur(6px)}
+  .hint strong{color:#fff}
+  @keyframes hintPulse{0%,100%{box-shadow:0 0 0 0 rgba(253,230,138,.35)}50%{box-shadow:0 0 0 10px rgba(253,230,138,0)}}
+  .panel{background:rgba(15,23,42,.96);color:#fff;border-top-left-radius:22px;border-top-right-radius:22px;padding:18px 16px calc(env(safe-area-inset-bottom) + 16px);max-height:65vh;display:flex;flex-direction:column;backdrop-filter:blur(10px);border-top:1px solid rgba(148,163,184,.25);transform:translateY(100%);opacity:0;animation:slideUp .32s cubic-bezier(.2,.8,.2,1) forwards;box-shadow:0 -8px 32px rgba(0,0,0,.4)}
+  @keyframes slideUp{to{transform:translateY(0);opacity:1}}
+  .panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px}
+  .panel-header h2{font-size:22px;font-weight:800;color:#fde68a}
+  .panel-list{overflow-y:auto;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+  .automation-item{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:14px;padding:16px;min-height:64px;display:flex;align-items:center;gap:14px;font-size:18px;font-family:inherit;font-weight:600;text-align:left;cursor:pointer;width:100%;transition:transform .12s ease,background .2s;touch-action:manipulation}
+  .automation-item:active{background:#334155}
+  .automation-item .icon{font-size:28px;line-height:1}
+  .automation-item .name{flex:1;line-height:1.25}
+  .automation-item .arrow{font-size:26px;color:#fbbf24;font-weight:300}
+  .card-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;padding:16px;padding-bottom:calc(env(safe-area-inset-bottom) + 16px);z-index:20;animation:fadeIn .2s ease-out forwards;backdrop-filter:blur(2px)}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .card{background:rgba(15,23,42,.97);color:#fff;border-radius:22px;padding:22px 20px 20px;width:100%;max-width:520px;max-height:65vh;overflow-y:auto;border:1px solid rgba(148,163,184,.3);box-shadow:0 20px 60px rgba(0,0,0,.6);animation:cardIn .28s cubic-bezier(.2,.8,.2,1) forwards}
+  @keyframes cardIn{from{transform:scale(.9) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+  .card h2{font-size:20px;font-weight:800;color:#fde68a;margin-bottom:10px;display:flex;align-items:center;gap:10px;line-height:1.3}
+  .card h2 span{font-size:24px}
+  .card p.desc{font-size:15px;line-height:1.5;color:#e2e8f0;margin-bottom:14px}
+  .price-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:16px;border-bottom:1px solid #334155;gap:12px}
+  .price-row .label{color:#94a3b8;font-size:14px}
+  .price-row .value{color:#f1f5f9;font-weight:600;text-align:right}
+  .price-row.total{border-bottom:none;padding-top:12px;margin-top:2px;border-top:2px solid #fbbf24}
+  .price-row.total .label{color:#fbbf24;font-weight:700;font-size:15px}
+  .price-row.total .value{color:#fbbf24;font-weight:800;font-size:17px}
+  .product-name{font-size:13px;color:#94a3b8;margin-top:10px;font-style:italic;line-height:1.4}
+  .card-actions{display:flex;gap:8px;margin-top:16px}
+  .card-actions .btn{flex:1;font-size:16px;min-height:52px;padding:14px}
+  .float-btn{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 20px);width:64px;height:64px;border-radius:32px;background:rgba(37,99,235,.95);color:#fff;border:none;font-size:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:15;box-shadow:0 4px 16px rgba(0,0,0,.5);backdrop-filter:blur(6px);transition:transform .12s}
+  .float-btn:active{transform:scale(.94)}
+  .float-btn.left{left:20px}
+  .float-btn.right{right:20px}
+  .rec-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:#fff;font-size:20px;z-index:100;padding:20px;text-align:center}
+  .rec-overlay .dot{width:16px;height:16px;border-radius:8px;background:#dc2626;display:inline-block;margin-right:10px;animation:blink 1s infinite}
+  @keyframes blink{0%,50%{opacity:1}51%,100%{opacity:.3}}
+  .rec-overlay .progress{width:80%;max-width:400px;height:8px;background:#1e293b;border-radius:4px;overflow:hidden}
+  .rec-overlay .progress>div{height:100%;background:#10b981;transition:width .3s}
+  .rec-overlay small{font-size:14px;color:#94a3b8;max-width:340px}
+  @media (min-width:768px){.panel{max-width:520px;margin:0 auto 20px;border-radius:22px}.card-backdrop{align-items:flex-end}.top-bar{padding-left:24px;padding-right:24px}.top-bar h1{font-size:24px}}
+</style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="ui-overlay"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const ENABLE_SHADOWS = true;
+    const SHADOW_MAP_SIZE = window.innerWidth < 768 ? 1024 : 2048;
+
+    /* ============================================================
+     * 1. CATÁLOGO
+     * ============================================================ */
+    const AUTOMATION_DATA = {
+      bedroom: {
+        id:'bedroom', name:'Quarto', icon:'🛏️',
+        devices:[
+          { id:'bedroom_light', name:'Iluminação de Presença Noturna', icon:'💡', color:0xffd68a, type:'pendant',
+            description:'Lâmpada LED inteligente com sensor de movimento. Acende automaticamente ao detectar movimento à noite, com luz âmbar suave que não deslumbra — essencial para prevenir quedas ao levantar da cama.',
+            productName:'Lâmpada Smart Wi-Fi + Sensor de Presença',
+            productPrice:{min:84.53,max:92.03}, installPrice:80.0, total:{min:170.0,max:190.0},
+            markerPosition:{x:0,y:1.75,z:0},
+            cameraPosition:{x:0.4,y:1.4,z:1.4},
+            cameraLookAt:{x:0,y:1.75,z:0} },
+          { id:'bedroom_fall', name:'Sensor de Queda (Radar)', icon:'🛡️', color:0x10b981, type:'radar',
+            description:'Sensor de radar que detecta quedas sem câmeras, preservando a privacidade. Emite alerta sonoro e notificação caso o idoso permaneça imóvel por tempo configurado.',
+            productName:'FALLR1 (Radar Matter) / Caregiver Pager',
+            productPrice:{min:207.57,max:471.95}, installPrice:50.0, total:{min:260.0,max:520.0},
+            markerPosition:{x:-1.92,y:1.5,z:-0.9}, rotation:Math.PI/2,
+            cameraPosition:{x:-1.1,y:1.5,z:-0.9},
+            cameraLookAt:{x:-1.92,y:1.5,z:-0.9} },
+          { id:'bedroom_sos', name:'Alarme de Emergência (SOS)', icon:'🚨', color:0xf97316, type:'sos',
+            description:'Botão de pânico fixado na parede ao lado da cama, com botão grande vermelho "SOS" e LED de status. Aciona o cuidador via Wi-Fi. Fácil de encontrar e pressionar até no escuro.',
+            productName:'Botão SOS Smart / integração com assistente',
+            productPrice:{min:80.0,max:120.0}, installPrice:30.0, total:{min:110.0,max:150.0},
+            markerPosition:{x:0.6,y:0.75,z:-1.42}, rotation:0, hasCord:false,
+            cameraPosition:{x:0.6,y:0.85,z:-0.55},
+            cameraLookAt:{x:0.6,y:0.75,z:-1.42} },
+          { id:'bedroom_plug', name:'Tomada Inteligente (Saúde)', icon:'🔌', color:0xf97316, type:'plug',
+            description:'Tomada Wi-Fi para ligar/desligar aparelhos (umidificador, aquecedor) por voz ou app, com monitoramento de consumo. Ajuda idosos que esquecem aparelhos ligados.',
+            productName:'Tomada Inteligente Wi-Fi EKAZA T105',
+            productPrice:{min:34.10,max:52.15}, installPrice:20.0, total:{min:55.0,max:75.0},
+            markerPosition:{x:1.7,y:0.35,z:-1.42}, rotation:0,
+            cameraPosition:{x:1.7,y:0.55,z:-0.55},
+            cameraLookAt:{x:1.7,y:0.35,z:-1.42} },
+          { id:'bedroom_curtain', name:'Cortina Automatizada', icon:'🪟', color:0x8b5cf6, type:'curtain',
+            description:'Motor silencioso que abre e fecha as cortinas por voz, app ou controle remoto. Ótimo para idosos com mobilidade reduzida — a luz natural se ajusta sozinha ao longo do dia.',
+            productName:'Motor de Cortina Wi-Fi / SwitchBot Curtain',
+            productPrice:{min:350.0,max:650.0}, installPrice:100.0, total:{min:450.0,max:750.0},
+            markerPosition:{x:-1.82,y:1.87,z:0.2}, rotation:Math.PI/2,
+            cameraPosition:{x:0.2,y:1.55,z:0.7},
+            cameraLookAt:{x:-1.9,y:1.35,z:0.2} }
+        ]
+      },
+      bathroom: {
+        id:'bathroom', name:'Banheiro', icon:'🚿',
+        devices:[
+          { id:'bathroom_light', name:'Iluminação Automática', icon:'💡', color:0xfff1d0, type:'pendant',
+            description:'Lâmpada ou fita LED com sensor de presença. Acende ao entrar no banheiro sem precisar procurar o interruptor — especialmente à noite. Luz branca neutra para tarefas.',
+            productName:'Lâmpada Smart + Sensor de Presença',
+            productPrice:{min:84.53,max:92.03}, installPrice:80.0, total:{min:170.0,max:190.0},
+            markerPosition:{x:3.2,y:1.75,z:0},
+            cameraPosition:{x:3.2,y:1.55,z:1.0},
+            cameraLookAt:{x:3.2,y:1.75,z:0} },
+          { id:'bathroom_fall', name:'Sensor de Queda (Banheiro)', icon:'🛡️', color:0x10b981, type:'radar',
+            description:'O banheiro é o local de maior risco. Sensor de radar sem câmeras que detecta quedas e aciona alarme/notificação — preserva a privacidade do idoso.',
+            productName:'FALLR1 (Radar Matter)',
+            productPrice:{min:350.0,max:500.0}, installPrice:50.0, total:{min:400.0,max:550.0},
+            markerPosition:{x:3.2,y:1.9,z:0.92}, rotation:Math.PI,
+            cameraPosition:{x:3.2,y:1.7,z:0.05},
+            cameraLookAt:{x:3.2,y:1.9,z:0.92} },
+          { id:'bathroom_sos_toilet', name:'Botão SOS (junto ao vaso)', icon:'🚨', color:0xf97316, type:'sos',
+            description:'Botão SOS impermeável ao lado do vaso, com botão grande vermelho. Fácil de alcançar até a partir do chão em caso de queda. Aciona o cuidador via Wi-Fi.',
+            productName:'Botão SOS sem fio impermeável',
+            productPrice:{min:70.0,max:100.0}, installPrice:20.0, total:{min:90.0,max:120.0},
+            markerPosition:{x:2.75,y:0.55,z:-0.92}, rotation:0, hasCord:false,
+            cameraPosition:{x:2.75,y:0.85,z:-0.15},
+            cameraLookAt:{x:2.75,y:0.55,z:-0.92} },
+          { id:'bathroom_sos_shower', name:'Botão SOS (dentro do box)', icon:'🚨', color:0xf97316, type:'sos',
+            description:'Botão SOS dentro do box do chuveiro, com cordão de puxar que facilita o alcance até do chão. À prova d\'água (IP67). Cobre o ponto de maior risco do banheiro.',
+            productName:'Botão SOS sem fio impermeável com cordão (IP67)',
+            productPrice:{min:90.0,max:130.0}, installPrice:30.0, total:{min:120.0,max:160.0},
+            markerPosition:{x:4.30,y:1.2,z:0.5}, rotation:-Math.PI/2, hasCord:true,
+            cameraPosition:{x:3.5,y:1.0,z:0.5},
+            cameraLookAt:{x:4.30,y:1.0,z:0.5} }
+        ]
+      },
+      future: { id:'future', name:'Fechadura Eletrônica (futuro)', icon:'🔐', devices:[{
+        id:'entrance_lock', name:'Fechadura Eletrônica Hands-Free', icon:'🔐',
+        description:'Reconhecimento facial 3D, TAG RFID ou push-pull. Biometria digital não é confiável para 65+.',
+        productName:'Intelbras MFR 7001 ou Yale Luna Pro',
+        productPrice:{min:700.0,max:1200.0}, installPrice:200.0, total:{min:850.0,max:1450.0}, future:true }]}
+    };
+
+    function findDeviceById(id){
+      for(const r in AUTOMATION_DATA){
+        const room=AUTOMATION_DATA[r]; if(!room.devices) continue;
+        const d=room.devices.find(x=>x.id===id);
+        if(d) return {device:d, roomId:r};
+      }
+      return null;
+    }
+
+    /* ============================================================
+     * 2. UTILITÁRIOS / TEXTURAS
+     * ============================================================ */
+    const hexToRgba=(hex,a)=>{const h=hex.replace('#','');const n=parseInt(h,16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;};
+    const shade=(hex,d)=>{const h=hex.replace('#','');const n=parseInt(h,16);const r=Math.min(255,Math.max(0,((n>>16)&255)+d));const g=Math.min(255,Math.max(0,((n>>8)&255)+d));const b=Math.min(255,Math.max(0,(n&255)+d));return '#'+((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');};
+
+    function makeWoodTexture(base='#9a7350',grain='#5c3e22'){
+      const S=512,c=document.createElement('canvas');c.width=c.height=S;
+      const ctx=c.getContext('2d');ctx.fillStyle=base;ctx.fillRect(0,0,S,S);
+      const planks=6,ph=S/planks;
+      for(let p=0;p<planks;p++){
+        const y=p*ph;
+        ctx.fillStyle=shade(base,(Math.random()-0.5)*18);ctx.fillRect(0,y,S,ph);
+        for(let i=0;i<22;i++){
+          ctx.strokeStyle=hexToRgba(grain,0.05+Math.random()*0.08);
+          ctx.lineWidth=0.5+Math.random()*1.2;
+          ctx.beginPath();let py=y+Math.random()*ph;ctx.moveTo(0,py);
+          for(let x=0;x<=S;x+=20){py+=(Math.random()-0.5)*3;py=Math.max(y+2,Math.min(y+ph-2,py));ctx.lineTo(x,py);}
+          ctx.stroke();
+        }
+        ctx.strokeStyle=hexToRgba(grain,0.5);ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(S,y);ctx.stroke();
+      }
+      const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;return t;
+    }
+    function makeTileTexture(base='#e8e8e8',grout='#a8a8a8',nx=2,ny=2){
+      const S=512,c=document.createElement('canvas');c.width=c.height=S;
+      const ctx=c.getContext('2d');ctx.fillStyle=grout;ctx.fillRect(0,0,S,S);
+      const tw=S/nx,th=S/ny,m=4;
+      for(let y=0;y<ny;y++)for(let x=0;x<nx;x++){ctx.fillStyle=shade(base,(Math.random()-0.5)*12);ctx.fillRect(x*tw+m,y*th+m,tw-m*2,th-m*2);}
+      const img=ctx.getImageData(0,0,S,S);
+      for(let i=0;i<img.data.length;i+=4){const n=(Math.random()-0.5)*8;img.data[i]+=n;img.data[i+1]+=n;img.data[i+2]+=n;}
+      ctx.putImageData(img,0,0);
+      const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;return t;
+    }
+    function makeFabricTexture(base='#ece7dd',noise=18){
+      const S=256,c=document.createElement('canvas');c.width=c.height=S;
+      const ctx=c.getContext('2d');ctx.fillStyle=base;ctx.fillRect(0,0,S,S);
+      const img=ctx.getImageData(0,0,S,S);
+      for(let i=0;i<img.data.length;i+=4){const n=(Math.random()-0.5)*noise;img.data[i]+=n;img.data[i+1]+=n;img.data[i+2]+=n;}
+      ctx.putImageData(img,0,0);
+      const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;return t;
+    }
+    function makeWallTexture(base='#f2efe8'){
+      const S=256,c=document.createElement('canvas');c.width=c.height=S;
+      const ctx=c.getContext('2d');ctx.fillStyle=base;ctx.fillRect(0,0,S,S);
+      const img=ctx.getImageData(0,0,S,S);
+      for(let i=0;i<img.data.length;i+=4){const n=(Math.random()-0.5)*6;img.data[i]+=n;img.data[i+1]+=n;img.data[i+2]+=n;}
+      ctx.putImageData(img,0,0);
+      const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;return t;
+    }
+    function makeRugTexture(){
+      const S=512,c=document.createElement('canvas');c.width=c.height=S;
+      const ctx=c.getContext('2d');ctx.fillStyle='#c8b8a0';ctx.fillRect(0,0,S,S);
+      ctx.strokeStyle='#8b6f47';ctx.lineWidth=14;ctx.strokeRect(20,20,S-40,S-40);
+      ctx.strokeStyle=shade('#8b6f47',20);ctx.lineWidth=3;
+      const step=40;
+      for(let y=60;y<S-60;y+=step)for(let x=60;x<S-60;x+=step){
+        ctx.beginPath();ctx.moveTo(x+step/2,y);ctx.lineTo(x+step,y+step/2);ctx.lineTo(x+step/2,y+step);ctx.lineTo(x,y+step/2);ctx.closePath();ctx.stroke();
+      }
+      const img=ctx.getImageData(0,0,S,S);
+      for(let i=0;i<img.data.length;i+=4){const n=(Math.random()-0.5)*14;img.data[i]+=n;img.data[i+1]+=n;img.data[i+2]+=n;}
+      ctx.putImageData(img,0,0);
+      const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
+    }
+    function makeShadowTexture(){
+      const S=128,c=document.createElement('canvas');c.width=c.height=S;
+      const ctx=c.getContext('2d');
+      const g=ctx.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);
+      g.addColorStop(0,'rgba(0,0,0,0.55)');g.addColorStop(0.6,'rgba(0,0,0,0.18)');g.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=g;ctx.fillRect(0,0,S,S);return new THREE.CanvasTexture(c);
+    }
+    function makeMirrorTexture(){
+      const S=256,c=document.createElement('canvas');c.width=c.height=S;
+      const ctx=c.getContext('2d');
+      const g=ctx.createLinearGradient(0,0,S,S);
+      g.addColorStop(0,'#e8eef2');g.addColorStop(0.5,'#d0dce4');g.addColorStop(1,'#c0ccd4');
+      ctx.fillStyle=g;ctx.fillRect(0,0,S,S);
+      ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=3;
+      for(let i=0;i<4;i++){
+        ctx.beginPath();
+        ctx.moveTo(0,20+i*60);
+        ctx.lineTo(S,20+i*60-20);
+        ctx.stroke();
+      }
+      ctx.fillStyle='rgba(255,255,255,0.7)';
+      ctx.beginPath();ctx.ellipse(S*0.3,S*0.35,35,18,-0.3,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.ellipse(S*0.72,S*0.62,22,12,0.4,0,Math.PI*2);ctx.fill();
+      const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
+    }
+    function makeSOSTexture(){
+      const S=256,c=document.createElement('canvas');c.width=c.height=S;
+      const ctx=c.getContext('2d');
+      ctx.fillStyle='#d02020';ctx.fillRect(0,0,S,S);
+      ctx.fillStyle='#ffffff';
+      ctx.font='bold 90px Arial';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText('SOS',S/2,S/2+5);
+      const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
+    }
+    function makeDotTexture(){
+      const S=128,c=document.createElement('canvas');c.width=c.height=S;
+      const ctx=c.getContext('2d');
+      const g=ctx.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);
+      g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(0.4,'rgba(253,230,138,0.8)');g.addColorStop(1,'rgba(253,230,138,0)');
+      ctx.fillStyle=g;ctx.fillRect(0,0,S,S);
+      const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
+    }
+
+    /* ============================================================
+     * 3. RENDERER / SCENE / CAMERA / CONTROLS
+     * ============================================================ */
+    const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+    renderer.setSize(window.innerWidth,window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    renderer.shadowMap.enabled=ENABLE_SHADOWS;
+    renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+    renderer.toneMapping=THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure=1.12;
+    document.getElementById('app').appendChild(renderer.domElement);
+
+    const scene=new THREE.Scene();
+    scene.background=new THREE.Color(0x0e1524);
+
+    const camera=new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.05, 100);
+
+    const controls=new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping=true;
+    controls.dampingFactor=0.12;
+    controls.rotateSpeed=0.65;
+    controls.zoomSpeed=1.0;
+    controls.panSpeed=1.0;
+    controls.enablePan=true;
+    controls.screenSpacePanning=false;      // pan no plano do chão
+    controls.zoomToCursor=true;             // zoom onde está o mouse/dedo
+    controls.minDistance=0.6;
+    controls.maxDistance=30;
+    controls.minPolarAngle=0.1;
+    controls.maxPolarAngle=Math.PI/2.05;
+    controls.maxTargetRadius=10;
+    controls.touches={ONE:THREE.TOUCH.ROTATE, TWO:THREE.TOUCH.DOLLY_PAN};
+
+    /* ============================================================
+     * 4. AMBIENTE + LUZES
+     * ============================================================ */
+    const pmrem=new THREE.PMREMGenerator(renderer);
+    const roomEnv=new RoomEnvironment();
+    scene.environment=pmrem.fromScene(roomEnv,0.04).texture;
+    pmrem.dispose();
+    if(roomEnv.dispose) roomEnv.dispose();
+
+    scene.add(new THREE.HemisphereLight(0xcfe0ff,0x3a2f28,0.55));
+
+    const sun=new THREE.DirectionalLight(0xfff0d0,2.4);
+    sun.position.set(-7,6,2.5);
+    sun.target.position.set(1.5,0.3,-0.5);
+    scene.add(sun.target);scene.add(sun);
+    if(ENABLE_SHADOWS){
+      sun.castShadow=true;
+      sun.shadow.mapSize.set(SHADOW_MAP_SIZE,SHADOW_MAP_SIZE);
+      sun.shadow.camera.left=-9;sun.shadow.camera.right=9;
+      sun.shadow.camera.top=6;sun.shadow.camera.bottom=-6;
+      sun.shadow.camera.near=0.5;sun.shadow.camera.far=30;
+      sun.shadow.bias=-0.0004;sun.shadow.normalBias=0.025;sun.shadow.radius=3;
+    }
+
+    const fill=new THREE.DirectionalLight(0xbcd6ff,0.32);
+    fill.position.set(6,4,-4);
+    scene.add(fill);
+
+    /* ============================================================
+     * 5. MATERIAIS
+     * ============================================================ */
+    const MAX_ANISO=renderer.capabilities.getMaxAnisotropy();
+    const rep=(t,rx,ry)=>{t.repeat.set(rx,ry);t.anisotropy=MAX_ANISO;return t;};
+
+    const woodTex=rep(makeWoodTexture('#9a7350'),2,2);
+    const woodDarkTex=rep(makeWoodTexture('#6b4a28','#3a2413'),1.5,1.5);
+    const woodFloorTex=rep(makeWoodTexture('#b08a5e','#5c3e22'),3,2.5);
+    const ceramicFloorTex=rep(makeTileTexture('#e6eef2','#b8c4cc',3,3),2,2);
+    const wallTileTex=rep(makeTileTexture('#f2f6f8','#c8d2d8',4,4),2,2);
+    const wallTex=rep(makeWallTexture('#f2efe8'),2,1.5);
+    const fabricTex=rep(makeFabricTexture('#efe9dd',16),2,2);
+    const duvetTex=rep(makeFabricTexture('#8fb2c8',22),3,2);
+    const pillowTex=rep(makeFabricTexture('#ffffff',12),2,2);
+    const rugTex=makeRugTexture();
+    const shadowTex=makeShadowTexture();
+    const mirrorTex=makeMirrorTexture();
+    const sosTex=makeSOSTexture();
+    const dotTex=makeDotTexture();
+
+    const MAT={
+      wall:new THREE.MeshStandardMaterial({map:wallTex,roughness:0.92}),
+      wallTile:new THREE.MeshStandardMaterial({map:wallTileTex,roughness:0.4,metalness:0.05}),
+      floorBedroom:new THREE.MeshStandardMaterial({map:woodFloorTex,roughness:0.72,metalness:0.02}),
+      floorBathroom:new THREE.MeshStandardMaterial({map:ceramicFloorTex,roughness:0.32,metalness:0.06}),
+      baseboard:new THREE.MeshStandardMaterial({color:0xf0ece0,roughness:0.7}),
+      wood:new THREE.MeshStandardMaterial({map:woodTex,roughness:0.7,metalness:0.03}),
+      woodDark:new THREE.MeshStandardMaterial({map:woodDarkTex,roughness:0.65,metalness:0.05}),
+      mattress:new THREE.MeshStandardMaterial({map:fabricTex,roughness:0.95}),
+      duvet:new THREE.MeshStandardMaterial({map:duvetTex,roughness:0.95,side:THREE.DoubleSide}),
+      pillow:new THREE.MeshStandardMaterial({map:pillowTex,roughness:0.95}),
+      ceramic:new THREE.MeshStandardMaterial({color:0xfafafa,roughness:0.15,metalness:0.08}),
+      ceramicGlossy:new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.05,metalness:0.15}),
+      chrome:new THREE.MeshStandardMaterial({color:0xdedede,roughness:0.12,metalness:0.9}),
+      darkMetal:new THREE.MeshStandardMaterial({color:0x2a2a2a,roughness:0.4,metalness:0.7}),
+      mirror:new THREE.MeshBasicMaterial({map:mirrorTex}),
+      glass:new THREE.MeshPhysicalMaterial({color:0xd8ecf5,transparent:true,opacity:0.16,roughness:0.03,transmission:0.7,side:THREE.DoubleSide,ior:1.5}),
+      curtain:new THREE.MeshStandardMaterial({color:0xe8dcc4,roughness:0.9,side:THREE.DoubleSide}),
+      rug:new THREE.MeshStandardMaterial({map:rugTex,roughness:0.95}),
+      lampShade:new THREE.MeshStandardMaterial({color:0xfff0c8,emissive:0xffd880,emissiveIntensity:0.65,roughness:0.9}),
+      lampBase:new THREE.MeshStandardMaterial({color:0x3a3a3a,roughness:0.5,metalness:0.3}),
+      contactShadow:new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false,opacity:0.85}),
+      bathMat:new THREE.MeshStandardMaterial({color:0xd4e8ec,roughness:0.95}),
+      towel:new THREE.MeshStandardMaterial({color:0xf0c8b8,roughness:0.95}),
+      tvFrame:new THREE.MeshStandardMaterial({color:0x1a1a1a,roughness:0.35,metalness:0.6}),
+      tvScreen:new THREE.MeshStandardMaterial({color:0x080820,roughness:0.15,metalness:0.75,emissive:0x0a0a20,emissiveIntensity:0.3}),
+      outdoor:new THREE.MeshBasicMaterial({color:0xc8dce8}),
+      plugPlate:new THREE.MeshStandardMaterial({color:0xf2efe8,roughness:0.7}),  // mesma cor da parede
+      plugBody:new THREE.MeshStandardMaterial({color:0xece4d4,roughness:0.6}),
+      sosPlate:new THREE.MeshStandardMaterial({color:0xf2f2f2,roughness:0.5}),
+      sosButton:new THREE.MeshStandardMaterial({map:sosTex,roughness:0.4,metalness:0.1})
+    };
+
+    const GC={};
+    const boxGeo=(w,h,d)=>{const k=`b_${w}_${h}_${d}`;return GC[k]||(GC[k]=new THREE.BoxGeometry(w,h,d));};
+    const cylGeo=(rt,rb,h,s=20)=>{const k=`c_${rt}_${rb}_${h}_${s}`;return GC[k]||(GC[k]=new THREE.CylinderGeometry(rt,rb,h,s));};
+
+    function addBox(parent,w,h,d,x,y,z,mat,cast=true,receive=true){
+      const m=new THREE.Mesh(boxGeo(w,h,d),mat);
+      m.position.set(x,y,z);m.castShadow=cast;m.receiveShadow=receive;parent.add(m);return m;
+    }
+    function addCyl(parent,rt,rb,h,x,y,z,mat,cast=true,receive=true,seg=20){
+      const m=new THREE.Mesh(cylGeo(rt,rb,h,seg),mat);
+      m.position.set(x,y,z);m.castShadow=cast;m.receiveShadow=receive;parent.add(m);return m;
+    }
+    function addContactShadow(parent,w,d,x,y,z){
+      const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),MAT.contactShadow);
+      m.rotation.x=-Math.PI/2;m.position.set(x,y+0.002,z);m.renderOrder=1;parent.add(m);return m;
+    }
+
+    /* ============================================================
+     * 6. APARTAMENTO
+     * ============================================================ */
+    const WALL_H=2.0, WALL_T=0.12, BB_T=0.05, BB_OFF=0.025;
+
+    function wallX(p,x,zA,zB){const l=zB-zA;if(l<=0.001)return;addBox(p,WALL_T,WALL_H,l,x,WALL_H/2,(zA+zB)/2,MAT.wall);}
+    function wallZ(p,z,xA,xB){const l=xB-xA;if(l<=0.001)return;addBox(p,l,WALL_H,WALL_T,(xA+xB)/2,WALL_H/2,z,MAT.wall);}
+    function baseXin(p,xInt,zA,zB,f){const l=zB-zA;if(l<=0.001)return;addBox(p,BB_T,0.1,l,xInt+f*BB_OFF,0.05,(zA+zB)/2,MAT.baseboard,false,true);}
+    function baseZin(p,zInt,xA,xB,f){const l=xB-xA;if(l<=0.001)return;addBox(p,l,0.1,BB_T,(xA+xB)/2,0.05,zInt+f*BB_OFF,MAT.baseboard,false,true);}
+
+    let curtainLeft=null, curtainRight=null;
+
+    function createApartment(){
+      // Pisos
+      const bf=new THREE.Mesh(boxGeo(4,0.06,3),MAT.floorBedroom);
+      bf.position.set(0,-0.03,0);bf.receiveShadow=true;
+      bf.userData.isRoom=true;bf.userData.roomId='bedroom';scene.add(bf);
+
+      const wf=new THREE.Mesh(boxGeo(2.4,0.06,2),MAT.floorBathroom);
+      wf.position.set(3.2,-0.03,0);wf.receiveShadow=true;
+      wf.userData.isRoom=true;wf.userData.roomId='bathroom';scene.add(wf);
+
+      // Quarto
+      wallX(scene,-2,-1.5,-0.4);
+      wallX(scene,-2,0.8,1.5);
+      addBox(scene,WALL_T,0.6,1.2,-2,0.3,0.2,MAT.wall);
+      addBox(scene,WALL_T,0.2,1.2,-2,1.9,0.2,MAT.wall);
+      wallZ(scene,-1.5,-2,2);
+      wallZ(scene,1.5,-2,1.0);
+      wallZ(scene,1.5,1.9,2);
+      wallX(scene,2,-1.5,-1.0);
+      wallX(scene,2,-1.0,-0.5);
+      wallX(scene,2,0.5,1.0);
+      wallX(scene,2,1.0,1.5);
+
+      // Banheiro
+      wallZ(scene,-1,2,4.4);
+      wallZ(scene,1,2,4.4);
+      wallX(scene,4.4,-1,1);
+
+      // Rodapés QUARTO apenas (banheiro sem rodapé)
+      baseXin(scene,-1.94,-1.44,1.44,+1);
+      baseZin(scene,-1.44,-1.94,1.94,+1);
+      baseZin(scene,1.44,-1.94,0.95,-1);
+      baseZin(scene,1.44,1.95,1.94,-1);
+      baseXin(scene,1.94,-1.44,-0.5,-1);
+      baseXin(scene,1.94,0.5,1.44,-1);
+
+      // Batentes porta (canto SE)
+      addBox(scene,0.1,2.1,0.14,1.0,1.05,1.5,MAT.woodDark);
+      addBox(scene,0.1,2.1,0.14,1.9,1.05,1.5,MAT.woodDark);
+      addBox(scene,1.0,0.1,0.14,1.45,2.05,1.5,MAT.woodDark);
+
+      createDoor();
+      createBed();
+      createNightstand();
+      createWindow();
+      createRug();
+      createTV();
+      createToilet();
+      createSinkAndMirror();
+      createShower();
+      createTowelRack();
+      createBathMat();
+    }
+
+    /* ---- PORTA: dobradiça à DIREITA, maçaneta à ESQUERDA, 90° encostada na parede leste ---- */
+    function createDoor(){
+      const g=new THREE.Group();
+      g.position.set(1.9,0,1.44);            // dobradiça no lado direito da abertura
+      g.rotation.y=-Math.PI/2;                // 90° aberta, encostada na parede leste
+      // Folha se estende em -X local (para a esquerda quando fechada)
+      const leaf=new THREE.Mesh(boxGeo(0.85,2.0,0.05),MAT.woodDark);
+      leaf.position.set(-0.425,1.0,0);
+      leaf.castShadow=true;
+      g.add(leaf);
+      // Puxador próximo à borda livre (que quando fechada fica à esquerda)
+      const handle=new THREE.Mesh(cylGeo(0.012,0.012,0.09,8),MAT.chrome);
+      handle.rotation.z=Math.PI/2;
+      handle.position.set(-0.7,1.0,0.04);
+      g.add(handle);
+      // Fechadura (cilindro) no mesmo lado
+      const lock=new THREE.Mesh(cylGeo(0.015,0.015,0.03,12),MAT.chrome);
+      lock.rotation.x=Math.PI/2;
+      lock.position.set(-0.7,0.95,0.04);
+      g.add(lock);
+      scene.add(g);
+    }
+
+    function createBed(){
+      const cx=-0.5;
+      addContactShadow(scene,2.4,1.7,cx,0,-0.78);
+      addBox(scene,2.02,0.9,0.06,cx,0.65,-1.44,MAT.woodDark);   // cabeceira
+      addBox(scene,2.0,0.22,1.35,cx,0.13,-0.78,MAT.woodDark);   // estrado
+      const fg=boxGeo(0.08,0.15,0.08);
+      [[-1.4,-0.15],[1.4,-0.15],[-1.4,-1.42],[1.4,-1.42]].forEach(([dx,dz])=>{
+        const m=new THREE.Mesh(fg,MAT.woodDark);m.position.set(cx+dx-0.06,0.075,dz);m.castShadow=true;scene.add(m);
+      });
+      addBox(scene,1.9,0.26,1.28,cx,0.37,-0.78,MAT.mattress);
+
+      // Cobertor natural (superfície ondulada + drapeado)
+      const dGeo=new THREE.PlaneGeometry(1.95,1.05,20,12);
+      const dPos=dGeo.attributes.position;
+      for(let i=0;i<dPos.count;i++){
+        const x=dPos.getX(i),y=dPos.getY(i);
+        const wave=Math.sin(x*4.5)*0.015+Math.cos(y*6)*0.012+Math.sin(x*9+y*4)*0.006;
+        dPos.setZ(i,wave+0.03);
+      }
+      dPos.needsUpdate=true;dGeo.computeVertexNormals();
+      const dMesh=new THREE.Mesh(dGeo,MAT.duvet);
+      dMesh.rotation.x=-Math.PI/2;
+      dMesh.position.set(cx,0.54,-0.55);
+      dMesh.castShadow=true;dMesh.receiveShadow=true;
+      scene.add(dMesh);
+
+      // Drapeado lateral esquerdo
+      const dlGeo=new THREE.PlaneGeometry(0.32,1.05,4,12);
+      const dlPos=dlGeo.attributes.position;
+      for(let i=0;i<dlPos.count;i++) dlPos.setZ(i,Math.sin(dlPos.getY(i)*8)*0.01);
+      dlPos.needsUpdate=true;dlGeo.computeVertexNormals();
+      const dl=new THREE.Mesh(dlGeo,MAT.duvet);
+      dl.rotation.y=Math.PI/2;
+      dl.position.set(cx-0.975,0.36,-0.55);
+      dl.castShadow=true;
+      scene.add(dl);
+
+      // Drapeado lateral direito
+      const drGeo=new THREE.PlaneGeometry(0.32,1.05,4,12);
+      const drPos=drGeo.attributes.position;
+      for(let i=0;i<drPos.count;i++) drPos.setZ(i,Math.sin(drPos.getY(i)*8)*0.01);
+      drPos.needsUpdate=true;drGeo.computeVertexNormals();
+      const dr=new THREE.Mesh(drGeo,MAT.duvet);
+      dr.rotation.y=-Math.PI/2;
+      dr.position.set(cx+0.975,0.36,-0.55);
+      dr.castShadow=true;
+      scene.add(dr);
+
+      // Drapeado no pé (fim da cama)
+      const dfGeo=new THREE.PlaneGeometry(1.95,0.32,16,4);
+      const dfPos=dfGeo.attributes.position;
+      for(let i=0;i<dfPos.count;i++) dfPos.setZ(i,Math.sin(dfPos.getX(i)*5)*0.012);
+      dfPos.needsUpdate=true;dfGeo.computeVertexNormals();
+      const df=new THREE.Mesh(dfGeo,MAT.duvet);
+      df.position.set(cx,0.37,-0.025);
+      df.castShadow=true;
+      scene.add(df);
+
+      // Travesseiros (esfera achatada)
+      const pGeo=new THREE.SphereGeometry(1,20,12);
+      const p1=new THREE.Mesh(pGeo,MAT.pillow);
+      p1.scale.set(0.30,0.09,0.20);p1.position.set(cx-0.42,0.57,-1.25);p1.rotation.y=0.06;p1.castShadow=true;p1.receiveShadow=true;scene.add(p1);
+      const p2=new THREE.Mesh(pGeo,MAT.pillow);
+      p2.scale.set(0.30,0.09,0.20);p2.position.set(cx+0.42,0.57,-1.25);p2.rotation.y=-0.04;p2.castShadow=true;p2.receiveShadow=true;scene.add(p2);
+    }
+
+    function createNightstand(){
+      const x=1.0,z=-1.25;
+      addContactShadow(scene,0.9,0.7,x,0,z);
+      addBox(scene,0.55,0.42,0.42,x,0.31,z,MAT.wood);
+      addBox(scene,0.6,0.04,0.46,x,0.54,z,MAT.wood);
+      addBox(scene,0.48,0.16,0.03,x,0.36,z+0.215,MAT.woodDark);
+      addBox(scene,0.14,0.02,0.02,x,0.36,z+0.235,MAT.chrome,false,false);
+      const lg=boxGeo(0.05,0.1,0.05);
+      [[-0.22,-0.18],[0.22,-0.18],[-0.22,0.18],[0.22,0.18]].forEach(([dx,dz])=>{
+        const m=new THREE.Mesh(lg,MAT.woodDark);m.position.set(x+dx,0.05,z+dz);m.castShadow=true;scene.add(m);
+      });
+      addCyl(scene,0.08,0.1,0.03,x,0.57,z,MAT.lampBase);
+      addCyl(scene,0.015,0.015,0.25,x,0.71,z,MAT.chrome);
+      addCyl(scene,0.12,0.16,0.18,x,0.92,z,MAT.lampShade);
+    }
+
+    function createWindow(){
+      // Sem céu/sol — apenas luz suave atrás
+      const outdoor=new THREE.Mesh(new THREE.PlaneGeometry(2,2),MAT.outdoor);
+      outdoor.rotation.y=Math.PI/2;
+      outdoor.position.set(-2.1,1.3,0.2);
+      scene.add(outdoor);
+
+      addBox(scene,0.04,1.16,0.06,-1.935,1.25,-0.4,MAT.woodDark,false,false);
+      addBox(scene,0.04,1.16,0.06,-1.935,1.25,0.8,MAT.woodDark,false,false);
+      addBox(scene,0.04,0.06,1.24,-1.935,1.82,0.2,MAT.woodDark,false,false);
+      addBox(scene,0.04,0.06,1.24,-1.935,0.68,0.2,MAT.woodDark,false,false);
+      addBox(scene,0.035,1.05,0.04,-1.935,1.25,0.2,MAT.woodDark,false,false);
+      addBox(scene,0.035,0.04,1.15,-1.935,1.25,0.2,MAT.woodDark,false,false);
+      const glass=new THREE.Mesh(new THREE.PlaneGeometry(1.15,1.05),MAT.glass);
+      glass.rotation.y=Math.PI/2;glass.position.set(-1.955,1.25,0.2);scene.add(glass);
+      addBox(scene,0.15,0.05,1.25,-1.87,0.66,0.2,MAT.baseboard,true,false);
+
+      const cGeoL=new THREE.PlaneGeometry(0.35,1.35,6,8);
+      const posL=cGeoL.attributes.position;
+      for(let i=0;i<posL.count;i++)posL.setZ(i,Math.sin(posL.getX(i)*8)*0.03);
+      posL.needsUpdate=true;cGeoL.computeVertexNormals();
+      curtainLeft=new THREE.Mesh(cGeoL,MAT.curtain);
+      curtainLeft.rotation.y=Math.PI/2;curtainLeft.position.set(-1.87,1.08,-0.28);scene.add(curtainLeft);
+
+      const cGeoR=new THREE.PlaneGeometry(0.35,1.35,6,8);
+      const posR=cGeoR.attributes.position;
+      for(let i=0;i<posR.count;i++)posR.setZ(i,Math.sin(posR.getX(i)*8)*0.03);
+      posR.needsUpdate=true;cGeoR.computeVertexNormals();
+      curtainRight=new THREE.Mesh(cGeoR,MAT.curtain);
+      curtainRight.rotation.y=Math.PI/2;curtainRight.position.set(-1.87,1.08,0.68);scene.add(curtainRight);
+
+      addCyl(scene,0.012,0.012,1.35,-1.87,1.78,0.2,MAT.darkMetal,true,false,8).rotation.x=Math.PI/2;
+    }
+
+    function createRug(){
+      const rug=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.1),MAT.rug);
+      rug.rotation.x=-Math.PI/2;rug.position.set(-0.5,0.01,0.35);rug.receiveShadow=true;scene.add(rug);
+    }
+
+    function createTV(){
+      addBox(scene,0.85,0.5,0.04,-0.5,1.4,1.42,MAT.tvFrame,true,false);
+      addBox(scene,0.78,0.44,0.005,-0.5,1.4,1.395,MAT.tvScreen,false,false);
+    }
+
+    /* ---------- BANHEIRO ---------- */
+    function createToilet(){
+      const x=2.75,z=-0.65;
+      addContactShadow(scene,0.6,0.55,x,0,z);
+      addBox(scene,0.34,0.05,0.32,x,0.03,z,MAT.ceramic);
+      addCyl(scene,0.14,0.19,0.28,x,0.2,z,MAT.ceramic,true,true,24);
+      const seat=new THREE.Mesh(new THREE.TorusGeometry(0.21,0.045,12,24),MAT.ceramicGlossy);
+      seat.rotation.x=Math.PI/2;seat.position.set(x,0.4,z);seat.castShadow=true;scene.add(seat);
+      const lid=new THREE.Mesh(cylGeo(0.22,0.22,0.03,24),MAT.ceramicGlossy);
+      lid.position.set(x,0.44,z);lid.castShadow=true;scene.add(lid);
+      addBox(scene,0.42,0.45,0.16,x,0.72,-0.86,MAT.ceramic);
+      addBox(scene,0.44,0.04,0.18,x,0.965,-0.86,MAT.ceramicGlossy);
+      addCyl(scene,0.03,0.03,0.02,x,0.99,-0.86,MAT.chrome,false,false,12);
+    }
+
+    function createSinkAndMirror(){
+      const cx=4.17,cz=-0.4;
+      addContactShadow(scene,0.45,0.7,cx,0,cz);
+      addBox(scene,0.44,0.7,0.55,cx,0.35,cz,MAT.woodDark);
+      addBox(scene,0.02,0.28,0.5,cx-0.22,0.5,cz,MAT.wood);
+      addBox(scene,0.02,0.28,0.5,cx-0.22,0.18,cz,MAT.wood);
+      addBox(scene,0.03,0.02,0.14,cx-0.24,0.5,cz,MAT.chrome,false,false);
+      addBox(scene,0.03,0.02,0.14,cx-0.24,0.18,cz,MAT.chrome,false,false);
+      addBox(scene,0.48,0.04,0.6,cx,0.72,cz,MAT.ceramicGlossy);
+      addCyl(scene,0.15,0.12,0.1,cx,0.78,cz,MAT.ceramicGlossy,true,true,24);
+      addCyl(scene,0.02,0.025,0.18,cx+0.18,0.85,cz,MAT.chrome,true,false,12);
+      addBox(scene,0.08,0.025,0.04,cx+0.14,0.94,cz,MAT.chrome,false,false);
+      // Espelho com textura canvas (não fica preto)
+      addBox(scene,0.015,0.75,0.6,4.335,1.45,cz,MAT.woodDark,false,false);
+      addBox(scene,0.008,0.7,0.55,4.325,1.45,cz,MAT.mirror,false,false);
+    }
+
+    function createShower(){
+      const cx=3.875,cz=0.625;
+      const floor=new THREE.Mesh(new THREE.PlaneGeometry(0.95,0.65),MAT.ceramicGlossy);
+      floor.rotation.x=-Math.PI/2;floor.position.set(cx,0.005,cz);scene.add(floor);
+      addCyl(scene,0.05,0.05,0.01,cx,0.012,cz,MAT.darkMetal,false,false,16);
+      const wallE=new THREE.Mesh(new THREE.PlaneGeometry(0.65,2.0),MAT.wallTile);
+      wallE.rotation.y=-Math.PI/2;wallE.position.set(4.32,1.0,cz);scene.add(wallE);
+      const wallS=new THREE.Mesh(new THREE.PlaneGeometry(0.95,2.0),MAT.wallTile);
+      wallS.rotation.y=Math.PI;wallS.position.set(cx,1.0,0.925);scene.add(wallS);
+      const glassW=new THREE.Mesh(new THREE.PlaneGeometry(0.65,1.9),MAT.glass);
+      glassW.position.set(3.4,0.95,cz);glassW.rotation.y=Math.PI/2;scene.add(glassW);
+      const glassN=new THREE.Mesh(new THREE.PlaneGeometry(0.95,1.9),MAT.glass);
+      glassN.position.set(cx,0.95,0.3);scene.add(glassN);
+      addBox(scene,0.025,1.92,0.025,3.4,0.96,0.3,MAT.darkMetal,false,false);
+      addBox(scene,0.025,1.92,0.025,3.4,0.96,0.95,MAT.darkMetal,false,false);
+      addBox(scene,0.025,1.92,0.025,4.30,0.96,0.3,MAT.darkMetal,false,false);
+      addBox(scene,0.025,0.04,0.65,4.30,1.92,cz,MAT.darkMetal,false,false);
+      addBox(scene,0.95,0.04,0.025,cx,1.92,0.3,MAT.darkMetal,false,false);
+      addCyl(scene,0.02,0.02,0.28,4.15,1.75,cz,MAT.chrome,true,false,8).rotation.z=Math.PI/2;
+      addCyl(scene,0.11,0.09,0.035,4.0,1.72,cz,MAT.chrome,true,false,16);
+      addBox(scene,0.14,0.16,0.015,4.31,1.1,cz,MAT.chrome,true,false);
+      addCyl(scene,0.022,0.022,0.028,4.31,1.16,cz,MAT.chrome,true,false,16);
+      addBox(scene,0.08,0.018,0.018,4.27,1.16,cz,MAT.chrome,true,false);
+      addCyl(scene,0.015,0.02,0.05,4.28,1.03,cz,MAT.chrome,true,false,12).rotation.z=Math.PI/2;
+    }
+
+    function createTowelRack(){
+      addCyl(scene,0.01,0.01,0.08,2.45,1.5,0.90,MAT.chrome,true,false,8).rotation.x=Math.PI/2;
+      addCyl(scene,0.01,0.01,0.08,2.75,1.5,0.90,MAT.chrome,true,false,8).rotation.x=Math.PI/2;
+      addCyl(scene,0.012,0.012,0.42,2.6,1.5,0.87,MAT.chrome,true,false,8).rotation.z=Math.PI/2;
+      addBox(scene,0.34,0.05,0.10,2.6,1.51,0.86,MAT.towel,true,true);
+      addBox(scene,0.34,0.42,0.015,2.6,1.28,0.82,MAT.towel,true,true);
+      addBox(scene,0.34,0.38,0.015,2.6,1.28,0.905,MAT.towel,true,true);
+    }
+
+    function createBathMat(){
+      const m=new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.4),MAT.bathMat);
+      m.rotation.x=-Math.PI/2;m.position.set(3.5,0.008,0.15);m.receiveShadow=true;scene.add(m);
+    }
+
+    createApartment();
+
+    /* ============================================================
+     * 7. APARELHOS 3D
+     * ============================================================ */
+    const deviceRegistry=new Map();
+    const pulsingMaterials=[];
+
+    function registerPulse(mat,base){ pulsingMaterials.push({mat,base,phase:Math.random()*Math.PI*2}); }
+    function registerDevice(id,group){ deviceRegistry.set(id,{group}); }
+    function tagAsMarker(group,id){
+      group.traverse(o=>{ if(o.isMesh && o.visible!==false){ o.userData.isMarker=true; o.userData.deviceId=id; } });
+      const hit=new THREE.Mesh(new THREE.SphereGeometry(0.24,8,6),new THREE.MeshBasicMaterial({visible:false}));
+      hit.userData.isMarker=true; hit.userData.deviceId=id; group.add(hit);
+    }
+
+    function makePendant(x,y,z,colorHex,id){
+      const g=new THREE.Group(); g.position.set(x,y,z);
+      const topY=2.0-y, cordLen=topY-0.07;
+      const plate=new THREE.Mesh(cylGeo(0.05,0.05,0.015,16),new THREE.MeshStandardMaterial({color:0xe8e4dc,roughness:0.6}));
+      plate.position.y=topY-0.008; plate.castShadow=true; g.add(plate);
+      if(cordLen>0.02){
+        const cord=new THREE.Mesh(cylGeo(0.006,0.006,cordLen,6),new THREE.MeshStandardMaterial({color:0x1a1a1a,roughness:0.9}));
+        cord.position.y=0.07+cordLen/2; g.add(cord);
+      }
+      const socket=new THREE.Mesh(cylGeo(0.028,0.032,0.05,12),new THREE.MeshStandardMaterial({color:0x333333,roughness:0.5,metalness:0.4}));
+      socket.position.y=0.03; socket.castShadow=true; g.add(socket);
+      const bulbMat=new THREE.MeshStandardMaterial({color:colorHex,emissive:colorHex,emissiveIntensity:1.3,roughness:0.35});
+      const bulb=new THREE.Mesh(new THREE.SphereGeometry(0.06,20,16),bulbMat);
+      bulb.position.y=-0.045; g.add(bulb);
+      registerPulse(bulbMat,1.3);
+      tagAsMarker(g,id); scene.add(g); registerDevice(id,g);
+    }
+
+    function makeRadarSensor(x,y,z,rotY,id){
+      const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.y=rotY;
+      const plate=new THREE.Mesh(boxGeo(0.16,0.16,0.02),new THREE.MeshStandardMaterial({color:0xf6f6f6,roughness:0.5}));
+      plate.position.z=0.01; plate.castShadow=true; g.add(plate);
+      const body=new THREE.Mesh(boxGeo(0.13,0.13,0.035),new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.4}));
+      body.position.z=0.037; body.castShadow=true; g.add(body);
+      const dome=new THREE.Mesh(new THREE.SphereGeometry(0.045,20,14,0,Math.PI*2,0,Math.PI/2),new THREE.MeshStandardMaterial({color:0xe8ecf0,roughness:0.25,metalness:0.1}));
+      dome.rotation.x=Math.PI/2; dome.position.z=0.058; g.add(dome);
+      const ledMat=new THREE.MeshStandardMaterial({color:0x10b981,emissive:0x10b981,emissiveIntensity:1.5,roughness:0.3});
+      const led=new THREE.Mesh(new THREE.SphereGeometry(0.008,8,6),ledMat);
+      led.position.set(0.042,0.042,0.056); g.add(led);
+      registerPulse(ledMat,1.5);
+      tagAsMarker(g,id); scene.add(g); registerDevice(id,g);
+    }
+
+    function makeSOSButton(x,y,z,rotY,id,hasCord){
+      const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.y=rotY;
+      // Placa retangular (realista)
+      const plate=new THREE.Mesh(boxGeo(0.13,0.17,0.02),MAT.sosPlate);
+      plate.position.z=0.01; plate.castShadow=true; g.add(plate);
+      // Botão grande vermelho com "SOS"
+      const button=new THREE.Mesh(cylGeo(0.05,0.05,0.028,32),MAT.sosButton);
+      button.rotation.x=Math.PI/2; button.position.z=0.035; button.castShadow=true; g.add(button);
+      // LED verde de status (topo do painel)
+      const ledMat=new THREE.MeshStandardMaterial({color:0x22c55e,emissive:0x22c55e,emissiveIntensity:1.5,roughness:0.3});
+      const led=new THREE.Mesh(new THREE.SphereGeometry(0.006,8,6),ledMat);
+      led.position.set(0,0.068,0.021); g.add(led);
+      registerPulse(ledMat,1.5);
+      // Cordão de puxar (para versão do box)
+      if(hasCord){
+        const cordMat=new THREE.MeshStandardMaterial({color:0xdc2626,roughness:0.8});
+        const cord=new THREE.Mesh(cylGeo(0.004,0.004,0.45,6),cordMat);
+        cord.position.set(0,-0.31,0.02); g.add(cord);
+        const handle=new THREE.Mesh(cylGeo(0.022,0.018,0.05,12),cordMat);
+        handle.position.set(0,-0.55,0.02); g.add(handle);
+      }
+      tagAsMarker(g,id); scene.add(g); registerDevice(id,g);
+    }
+
+    function makeSmartPlug(x,y,z,rotY,id){
+      const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.y=rotY;
+      // Mesma cor da parede
+      const plate=new THREE.Mesh(boxGeo(0.086,0.086,0.015),MAT.plugPlate);
+      plate.position.z=0.008; plate.castShadow=true; g.add(plate);
+      const body=new THREE.Mesh(boxGeo(0.075,0.075,0.028),MAT.plugBody);
+      body.position.z=0.032; body.castShadow=true; g.add(body);
+      // Furos padrão NBR 14136 (G topo, N+L base)
+      const holeMat=new THREE.MeshStandardMaterial({color:0x2a2a2a,roughness:0.9});
+      const holeGeo=new THREE.CylinderGeometry(0.0035,0.0035,0.008,12);
+      const hG=new THREE.Mesh(holeGeo,holeMat); hG.rotation.x=Math.PI/2; hG.position.set(0,0.006,0.047); g.add(hG);
+      const hN=new THREE.Mesh(holeGeo,holeMat); hN.rotation.x=Math.PI/2; hN.position.set(-0.0095,-0.005,0.047); g.add(hN);
+      const hL=new THREE.Mesh(holeGeo,holeMat); hL.rotation.x=Math.PI/2; hL.position.set(0.0095,-0.005,0.047); g.add(hL);
+      // LED
+      const ledMat=new THREE.MeshStandardMaterial({color:0xf97316,emissive:0xf97316,emissiveIntensity:1.5,roughness:0.3});
+      const led=new THREE.Mesh(new THREE.SphereGeometry(0.006,8,6),ledMat);
+      led.position.set(0.028,-0.028,0.047); g.add(led);
+      registerPulse(ledMat,1.5);
+      tagAsMarker(g,id); scene.add(g); registerDevice(id,g);
+    }
+
+    function makeCurtainMotor(x,y,z,rotY,id){
+      const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.y=rotY;
+      const body=new THREE.Mesh(boxGeo(0.12,0.06,0.06),new THREE.MeshStandardMaterial({color:0xeeeeee,roughness:0.4}));
+      body.castShadow=true; g.add(body);
+      const back=new THREE.Mesh(boxGeo(0.11,0.055,0.005),new THREE.MeshStandardMaterial({color:0xcccccc,roughness:0.6}));
+      back.position.z=-0.032; g.add(back);
+      const ledMat=new THREE.MeshStandardMaterial({color:0x8b5cf6,emissive:0x8b5cf6,emissiveIntensity:1.5,roughness:0.3});
+      const led=new THREE.Mesh(new THREE.SphereGeometry(0.007,8,6),ledMat);
+      led.position.set(0.045,0.018,0.031); g.add(led);
+      registerPulse(ledMat,1.5);
+      tagAsMarker(g,id); scene.add(g); registerDevice(id,g);
+    }
+
+    function createAllDevices(){
+      ['bedroom','bathroom'].forEach(rid=>{
+        AUTOMATION_DATA[rid].devices.forEach(d=>{
+          if(!d.markerPosition) return;
+          const p=d.markerPosition, rot=d.rotation||0;
+          switch(d.type){
+            case 'pendant': makePendant(p.x,p.y,p.z,d.color,d.id); break;
+            case 'radar':   makeRadarSensor(p.x,p.y,p.z,rot,d.id); break;
+            case 'sos':     makeSOSButton(p.x,p.y,p.z,rot,d.id,!!d.hasCord); break;
+            case 'plug':    makeSmartPlug(p.x,p.y,p.z,rot,d.id); break;
+            case 'curtain': makeCurtainMotor(p.x,p.y,p.z,rot,d.id); break;
+          }
+        });
+      });
+    }
+    createAllDevices();
+
+    function updatePulses(elapsed){
+      for(let i=0;i<pulsingMaterials.length;i++){
+        const p=pulsingMaterials[i];
+        const wave=0.5+Math.sin(elapsed*2.0+p.phase)*0.5;
+        p.mat.emissiveIntensity=p.base*(0.35+wave*1.15);
+      }
+    }
+
+    /* ============================================================
+     * 8. CAMERA MANAGER
+     * ============================================================ */
+    const easeInOutCubic=(t)=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+    const easeInOutQuart=(t)=>t<0.5?8*t*t*t*t:1-Math.pow(-2*t+2,4)/2;
+
+    function createCameraManager(camera,controls){
+      let animating=false;
+      const startPos=new THREE.Vector3(),endPos=new THREE.Vector3();
+      const startTgt=new THREE.Vector3(),endTgt=new THREE.Vector3();
+      let start=0,dur=1000,ease=easeInOutCubic;
+      function flyTo(pos,look,ms=1000,e=easeInOutCubic){
+        controls.enabled=false;
+        startPos.copy(camera.position);endPos.set(pos.x,pos.y,pos.z);
+        startTgt.copy(controls.target);endTgt.set(look.x,look.y,look.z);
+        start=performance.now();dur=Math.max(1,ms);ease=e;animating=true;
+      }
+      function update(){
+        if(!animating) return;
+        const raw=Math.min(1,(performance.now()-start)/dur);
+        const t=ease(raw);
+        camera.position.lerpVectors(startPos,endPos,t);
+        controls.target.lerpVectors(startTgt,endTgt,t);
+        camera.lookAt(controls.target);
+        if(raw>=1){ animating=false; controls.enabled=true; controls.update(); }
+      }
+      function setLookAt(v){ controls.target.set(v.x,v.y,v.z); camera.lookAt(controls.target); }
+      return {flyTo,update,isAnimating:()=>animating,setLookAt};
+    }
+
+    const CAMERA_PRESETS={
+      overview:{position:{x:1.2,y:9.5,z:7.0}, lookAt:{x:1.2,y:0,z:0}, fitWidth:7.5, fitHeight:4.0},
+      bedroom: {position:{x:0,y:4.5,z:3.2},   lookAt:{x:0,y:0.3,z:-0.3}, fitWidth:4.4, fitHeight:3.4},
+      bathroom:{position:{x:3.2,y:4.5,z:2.0}, lookAt:{x:3.2,y:0.3,z:0}, fitWidth:2.6, fitHeight:2.4}
+    };
+
+    function adaptPresetForAspect(preset){
+      const look=new THREE.Vector3(preset.lookAt.x,preset.lookAt.y,preset.lookAt.z);
+      const pos=new THREE.Vector3(preset.position.x,preset.position.y,preset.position.z);
+      const baseDist=pos.distanceTo(look);
+      const vFov=(camera.fov*Math.PI)/180;
+      const hFov=2*Math.atan(Math.tan(vFov/2)*camera.aspect);
+      let fitW=preset.fitWidth;
+      if(camera.aspect<0.7) fitW*=0.75;
+      const distH=(fitW/2)/Math.tan(hFov/2);
+      const distV=(preset.fitHeight/2)/Math.tan(vFov/2);
+      const dist=Math.max(baseDist, distH, distV);
+      const dir=pos.clone().sub(look).normalize();
+      const newPos=look.clone().add(dir.multiplyScalar(dist));
+      return {position:{x:newPos.x,y:newPos.y,z:newPos.z}, lookAt:preset.lookAt};
+    }
+
+    const cameraManager=createCameraManager(camera,controls);
+    const initial=adaptPresetForAspect(CAMERA_PRESETS.overview);
+    camera.position.set(initial.position.x,initial.position.y,initial.position.z);
+    cameraManager.setLookAt(initial.lookAt);
+    controls.update();
+
+    /* ============================================================
+     * 9. UI
+     * ============================================================ */
+    let uiCallbacks={};
+    const fmt=(v)=>{ try{ return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); } catch{ return 'R$ '+v.toFixed(2).replace('.',','); } };
+
+    function initUI(cb){
+      uiCallbacks=cb;
+      const overlay=document.getElementById('ui-overlay');
+      overlay.innerHTML=`
+        <div class="top-bar">
+          <h1>🏠 Casa Sênior 3D</h1>
+          <div class="top-btns">
+            <button class="btn-close" id="btn-record" aria-label="Gravar tour" title="Gravar tour em vídeo">🎥</button>
+            <button class="btn-close" id="btn-home" aria-label="Início">🏠</button>
+          </div>
+        </div>
+        <div class="hint" id="overview-hint">
+          👆 Toque num cômodo para entrar<br>
+          ✋ 1 dedo gira · 2 dedos = zoom + pan · 🖱️ scroll = zoom no cursor
+        </div>
+      `;
+      document.getElementById('btn-home').addEventListener('click',()=>uiCallbacks.onCloseList?.());
+      document.getElementById('btn-record').addEventListener('click',()=>uiCallbacks.onRecord?.());
+    }
+    const showHint=()=>{ const e=document.getElementById('overview-hint'); if(e) e.style.display='block'; };
+    const hideHint=()=>{ const e=document.getElementById('overview-hint'); if(e) e.style.display='none'; };
+    function hidePanels(){ document.getElementById('list-panel')?.remove(); hideCard(); removeFloatBtns(); }
+
+    function removeFloatBtns(){
+      document.getElementById('float-info')?.remove();
+      document.getElementById('float-back')?.remove();
+    }
+    function showFloatBtns(device,onBack){
+      removeFloatBtns();
+      const ov=document.getElementById('ui-overlay');
+      const info=document.createElement('button');
+      info.className='float-btn left'; info.id='float-info';
+      info.innerHTML='ℹ️';
+      info.onclick=()=>showCard(device,onBack);
+      ov.appendChild(info);
+      const back=document.createElement('button');
+      back.className='float-btn right'; back.id='float-back';
+      back.innerHTML='←';
+      back.onclick=()=>{ removeFloatBtns(); onBack(); };
+      ov.appendChild(back);
+    }
+
+    function showList(roomId){
+      hidePanels();
+      const room=AUTOMATION_DATA[roomId]; if(!room) return;
+      const ov=document.getElementById('ui-overlay');
+      const panel=document.createElement('div');
+      panel.className='panel'; panel.id='list-panel';
+      const items=room.devices.filter(d=>d.markerPosition).map(d=>`
+        <button class="automation-item" data-device-id="${d.id}">
+          <span class="icon">${d.icon}</span>
+          <span class="name">${d.name}</span>
+          <span class="arrow">›</span>
+        </button>`).join('');
+      panel.innerHTML=`
+        <div class="panel-header">
+          <h2>${room.icon} ${room.name}</h2>
+          <button class="btn-close" id="close-list" aria-label="Fechar">✕</button>
+        </div>
+        <div class="panel-list">${items}</div>`;
+      ov.appendChild(panel);
+      panel.querySelectorAll('[data-device-id]').forEach(b=>{
+        b.addEventListener('click',()=>uiCallbacks.onDeviceSelected?.(b.getAttribute('data-device-id')));
+      });
+      document.getElementById('close-list').addEventListener('click',()=>uiCallbacks.onCloseList?.());
+    }
+
+    function showCard(device,onBack){
+      hideCard();
+      const ov=document.getElementById('ui-overlay');
+      const bd=document.createElement('div');
+      bd.className='card-backdrop'; bd.id='device-card-backdrop';
+      bd.innerHTML=`
+        <div class="card">
+          <h2><span>${device.icon}</span> ${device.name}</h2>
+          <p class="desc">${device.description}</p>
+          <div class="price-row">
+            <span class="label">📦 Produto</span>
+            <span class="value">${fmt(device.productPrice.min)} – ${fmt(device.productPrice.max)}</span>
+          </div>
+          <div class="price-row">
+            <span class="label">🔧 Instalação</span>
+            <span class="value">${fmt(device.installPrice)}</span>
+          </div>
+          <div class="price-row total">
+            <span class="label">💰 Total</span>
+            <span class="value">${fmt(device.total.min)} – ${fmt(device.total.max)}</span>
+          </div>
+          <p class="product-name">Produto: ${device.productName}</p>
+          <div class="card-actions">
+            <button class="btn btn-ghost" id="btn-hide">👁️ Ver aparelho</button>
+            <button class="btn" id="btn-back">← Lista</button>
+          </div>
+        </div>`;
+      ov.appendChild(bd);
+      // Fechar (ver aparelho) — permanece na visão do dispositivo
+      bd.querySelector('#btn-hide').addEventListener('click',()=>{
+        hideCard();
+        showFloatBtns(device,onBack);
+      });
+      // Voltar à lista
+      bd.querySelector('#btn-back').addEventListener('click',()=>onBack?.());
+      // Clicar fora → esconde e mostra os botões flutuantes
+      bd.addEventListener('click',e=>{
+        if(e.target===bd){ hideCard(); showFloatBtns(device,onBack); }
+      });
+    }
+    function hideCard(){ document.getElementById('device-card-backdrop')?.remove(); }
+
+    /* ============================================================
+     * 10. INTERAÇÃO
+     * ============================================================ */
+    function setupInteraction({onRoomTap,onDeviceTap,isAnimating}){
+      const ray=new THREE.Raycaster();
+      const p=new THREE.Vector2();
+      let downPos=null, downTime=0, activePointers=0;
+      const targets=[];
+      scene.traverse(o=>{ if(o.isMesh && (o.userData.isMarker || o.userData.isRoom)) targets.push(o); });
+      function handleTap(cx,cy){
+        if(isAnimating && isAnimating()) return;
+        const rect=renderer.domElement.getBoundingClientRect();
+        p.x=((cx-rect.left)/rect.width)*2-1;
+        p.y=-((cy-rect.top)/rect.height)*2+1;
+        ray.setFromCamera(p,camera);
+        const hits=ray.intersectObjects(targets,false);
+        if(!hits.length) return;
+        const marker=hits.find(h=>h.object.userData.isMarker);
+        if(marker){ onDeviceTap(marker.object.userData.deviceId); return; }
+        const room=hits.find(h=>h.object.userData.isRoom);
+        if(room) onRoomTap(room.object.userData.roomId);
+      }
+      const el=renderer.domElement;
+      el.addEventListener('pointerdown',(e)=>{
+        activePointers++;
+        if(activePointers===1){ downPos={x:e.clientX,y:e.clientY}; downTime=performance.now(); }
+        else downPos=null;
+      });
+      el.addEventListener('pointerup',(e)=>{
+        activePointers=Math.max(0,activePointers-1);
+        if(!downPos) return;
+        const dist=Math.hypot(e.clientX-downPos.x,e.clientY-downPos.y);
+        const elapsed=performance.now()-downTime;
+        downPos=null;
+        if(dist<12 && elapsed<700) handleTap(e.clientX,e.clientY);
+      });
+      el.addEventListener('pointercancel',()=>{ activePointers=Math.max(0,activePointers-1); downPos=null; });
+    }
+
+    /* ============================================================
+     * 11. NAVEGAÇÃO
+     * ============================================================ */
+    const state={currentRoom:null,currentView:'overview',currentDevice:null,recording:false};
+
+    initUI({
+      onCloseList:()=>{ hidePanels(); goOverview(); },
+      onDeviceSelected:(id)=>navigateTo(id),
+      onRecord:()=>generateVideoTour()
+    });
+
+    function goOverview(){
+      state.currentView='overview'; state.currentRoom=null; state.currentDevice=null;
+      hidePanels();
+      const p=adaptPresetForAspect(CAMERA_PRESETS.overview);
+      cameraManager.flyTo(p.position,p.lookAt,1000,easeInOutCubic);
+      showHint();
+    }
+    function enterRoom(roomId){
+      const base=CAMERA_PRESETS[roomId]; if(!base) return;
+      state.currentView='room'; state.currentRoom=roomId; state.currentDevice=null;
+      hideHint(); hidePanels();
+      const p=adaptPresetForAspect(base);
+      cameraManager.flyTo(p.position,p.lookAt,1000,easeInOutCubic);
+      setTimeout(()=>{
+        if(state.currentView==='room' && state.currentRoom===roomId) showList(roomId);
+      },1000);
+    }
+    function navigateTo(id){
+      const found=findDeviceById(id);
+      if(!found || !found.device.cameraPosition) return;
+      const device=found.device;
+      if(!state.currentRoom) state.currentRoom=found.roomId;
+      state.currentView='device'; state.currentDevice=id;
+      hideCard(); removeFloatBtns();
+      cameraManager.flyTo(device.cameraPosition,device.cameraLookAt,1200,easeInOutQuart);
+      setTimeout(()=>{
+        if(state.currentView==='device' && state.currentDevice===id){
+          showCard(device,()=>{
+            hideCard(); removeFloatBtns();
+            if(state.currentRoom) enterRoom(state.currentRoom);
+            else goOverview();
+          });
+        }
+      },1200);
+    }
+
+    setupInteraction({
+      onRoomTap:(id)=>{ if(state.currentView==='overview') enterRoom(id); },
+      onDeviceTap:(id)=>navigateTo(id),
+      isAnimating:()=>cameraManager.isAnimating()
+    });
+
+    controls.addEventListener('start',()=>{
+      if(state.currentView==='overview') hideHint();
+    });
+
+    /* ============================================================
+     * 12. VIDEO TOUR
+     * ============================================================ */
+    async function generateVideoTour(){
+      if(state.recording) return;
+      state.recording=true;
+      hidePanels();
+      const canvas=renderer.domElement;
+      const mimeType=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'].find(t=>window.MediaRecorder && MediaRecorder.isTypeSupported(t));
+      if(!mimeType){ alert('Seu navegador não suporta gravação de vídeo.'); state.recording=false; return; }
+
+      const overlay=document.createElement('div');
+      overlay.className='rec-overlay';
+      overlay.innerHTML=`
+        <div style="font-size:24px"><span class="dot"></span>Gravando tour...</div>
+        <div class="progress"><div id="rec-bar" style="width:0%"></div></div>
+        <div id="rec-pct" style="font-size:16px;color:#94a3b8">0%</div>
+        <small>Não feche a aba. O download do vídeo iniciará automaticamente ao final (~50s).</small>`;
+      document.body.appendChild(overlay);
+      const bar=overlay.querySelector('#rec-bar');
+      const pct=overlay.querySelector('#rec-pct');
+
+      let chunks=[];
+      const stream=canvas.captureStream(30);
+      const rec=new MediaRecorder(stream,{mimeType,videoBitsPerSecond:5000000});
+      rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
+      rec.onstop=()=>{
+        const blob=new Blob(chunks,{type:mimeType});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url;
+        const ext=mimeType.includes('mp4')?'mp4':'webm';
+        a.download=`casa-senior-tour.${ext}`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(()=>URL.revokeObjectURL(url),5000);
+        overlay.remove();
+        state.recording=false;
+      };
+
+      const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+      // Prepara a sequência
+      const stops=[{kind:'preset',key:'overview',dwell:2500}];
+      stops.push({kind:'preset',key:'bedroom',dwell:1800});
+      AUTOMATION_DATA.bedroom.devices.forEach(d=>stops.push({kind:'device',device:d,dwell:2500}));
+      stops.push({kind:'preset',key:'bedroom',dwell:1000});
+      stops.push({kind:'preset',key:'bathroom',dwell:1800});
+      AUTOMATION_DATA.bathroom.devices.forEach(d=>stops.push({kind:'device',device:d,dwell:2500}));
+      stops.push({kind:'preset',key:'overview',dwell:2500});
+
+      // Reinicia visão
+      const p0=adaptPresetForAspect(CAMERA_PRESETS.overview);
+      camera.position.set(p0.position.x,p0.position.y,p0.position.z);
+      cameraManager.setLookAt(p0.lookAt);
+      controls.update();
+
+      await wait(400);
+      rec.start();
+
+      const totalStops=stops.length;
+      for(let i=0;i<totalStops;i++){
+        const s=stops[i];
+        const progress=Math.round((i/totalStops)*100);
+        bar.style.width=progress+'%';
+        pct.textContent=progress+'%';
+        if(s.kind==='preset'){
+          const p=adaptPresetForAspect(CAMERA_PRESETS[s.key]);
+          cameraManager.flyTo(p.position,p.lookAt,1200,easeInOutCubic);
+        } else if(s.kind==='device'){
+          cameraManager.flyTo(s.device.cameraPosition,s.device.cameraLookAt,1200,easeInOutQuart);
+        }
+        await wait(1300);
+        await wait(s.dwell);
+      }
+      bar.style.width='100%';
+      pct.textContent='100%';
+      await wait(200);
+      rec.stop();
+    }
+
+    /* ============================================================
+     * 13. RESIZE
+     * ============================================================ */
+    let lastAspect=window.innerWidth/window.innerHeight;
+    window.addEventListener('resize',()=>{
+      const a=window.innerWidth/window.innerHeight;
+      camera.aspect=a; camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth,window.innerHeight);
+      const changed=Math.abs(a-lastAspect)/lastAspect>0.3;
+      if(changed && !cameraManager.isAnimating() && state.currentView!=='device' && !state.recording){
+        const key=state.currentView==='overview'?'overview':state.currentRoom;
+        if(key && CAMERA_PRESETS[key]){
+          const p=adaptPresetForAspect(CAMERA_PRESETS[key]);
+          cameraManager.flyTo(p.position,p.lookAt,600,easeInOutCubic);
+        }
+      }
+      lastAspect=a;
+    });
+
+    /* ============================================================
+     * 14. LOOP
+     * ============================================================ */
+    const clock=new THREE.Clock();
+    function animate(){
+      requestAnimationFrame(animate);
+      const elapsed=clock.getElapsedTime();
+      if(cameraManager.isAnimating()) cameraManager.update();
+      else controls.update();
+      updatePulses(elapsed);
+      renderer.render(scene,camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
